@@ -1,12 +1,10 @@
 ---
-title: '123123'
+title: d updated
 slug: 'd '
 excerpt: sadf
 tags: abc
-author: Anonymous
+author: raiuny
 published: true
 date: '2026-08-29'
 ---
-# hello world
-xxxx
-xxxx
+updated
