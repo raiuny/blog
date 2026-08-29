@@ -1,14 +1,18 @@
 'use client'
 
-import { Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink } from 'lucide-react'
+import { Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useBlogStore } from '@/stores/blog-store'
-import { GithubSettings } from './github-settings'
+import { useSession } from '@/hooks/use-session'
+import { BASE_PATH, STATIC_MODE } from '@/lib/client-config'
 import { useState, useEffect, useRef } from 'react'
 
+const GITHUB_PROFILE_URL = 'https://github.com/raiuny'
+
 export function Header() {
-  const { view, setView, openEditor, searchQuery, setSearch, selectedPost, githubConfig, githubSynced } = useBlogStore()
+  const { view, setView, openEditor, searchQuery, setSearch, selectedPost } = useBlogStore()
+  const session = useSession()
   const [showSearch, setShowSearch] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -24,9 +28,21 @@ export function Header() {
     useBlogStore.getState().selectPost(null)
   }
 
-  const repoUrl = githubConfig
-    ? `https://github.com/${githubConfig.owner}/${githubConfig.repo}`
-    : 'https://github.com'
+  const authed = session?.authenticated === true
+
+  const signInButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      asChild
+      className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+    >
+      <a href={`${BASE_PATH}/api/auth/github`}>
+        <LogIn className="h-3.5 w-3.5" />
+        <span className="text-xs font-medium">Sign in</span>
+      </a>
+    </Button>
+  )
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -89,39 +105,53 @@ export function Header() {
               <span className="sr-only">Search</span>
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openEditor()}
-            className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
-          >
-            <PenSquare className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">Write</span>
-          </Button>
-          <GithubSettings />
+          {authed && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEditor()}
+              className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              <PenSquare className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Write</span>
+            </Button>
+          )}
+          {!authed && !STATIC_MODE && signInButton}
           <Button
             variant="ghost"
             size="icon"
             className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
             asChild
           >
-            <a href={repoUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-              <span className="sr-only">View on GitHub</span>
+            <a href={GITHUB_PROFILE_URL} target="_blank" rel="noopener noreferrer">
+              <Github className="h-4 w-4" />
+              <span className="sr-only">GitHub profile</span>
             </a>
           </Button>
+          {authed && session.avatar && (
+            <a href={`${BASE_PATH}/api/auth/logout`} title={`Sign out (${session.login})`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={session.avatar}
+                alt={session.login}
+                className="h-8 w-8 rounded-full border border-border/60"
+              />
+            </a>
+          )}
         </div>
 
         {/* Right - Mobile */}
         <div className="flex items-center gap-1 sm:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => openEditor()}
-            className="h-9 w-9 rounded-full"
-          >
-            <PenSquare className="h-4 w-4" />
-          </Button>
+          {authed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openEditor()}
+              className="h-9 w-9 rounded-full"
+            >
+              <PenSquare className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -142,16 +172,16 @@ export function Header() {
             onChange={(e) => setSearch(e.target.value)}
             className="mb-3 h-9 bg-secondary/50 border-0"
           />
-          <GithubSettings />
+          {!authed && !STATIC_MODE && signInButton}
           <Button
             variant="ghost"
             size="sm"
             className="mt-2 w-full justify-start gap-2 rounded-lg text-muted-foreground"
             asChild
           >
-            <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+            <a href={GITHUB_PROFILE_URL} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" />
-              View on GitHub
+              GitHub profile
             </a>
           </Button>
         </div>

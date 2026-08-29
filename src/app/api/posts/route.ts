@@ -1,4 +1,6 @@
 import { getLocalPost, listLocalPosts, saveLocalPost } from '@/lib/posts'
+import { getSession } from '@/lib/auth'
+import { syncPostToRepo } from '@/lib/sync'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -21,6 +23,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const { title, slug, excerpt, content, tags, published, authorName } = body
 
@@ -34,7 +41,18 @@ export async function POST(req: NextRequest) {
     }
 
     const newPost = await saveLocalPost(slug, { title, excerpt, content, tags, published, authorName })
-    return NextResponse.json({ post: newPost }, { status: 201 })
+
+    let githubSync: 'ok' | 'failed' = 'ok'
+    let githubSyncError: string | undefined
+    try {
+      await syncPostToRepo(session.token, newPost)
+    } catch (err) {
+      githubSync = 'failed'
+      githubSyncError = err instanceof Error ? err.message : 'GitHub sync failed'
+      console.error('GitHub sync failed for new post:', err)
+    }
+
+    return NextResponse.json({ post: newPost, githubSync, githubSyncError }, { status: 201 })
   } catch (error) {
     console.error('Error creating post:', error)
     return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })

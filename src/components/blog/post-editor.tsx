@@ -14,10 +14,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { Loader2, Eye, Cloud } from 'lucide-react'
+import { Loader2, Eye } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { clientSavePost } from '@/lib/github-client'
-import type { GitHubConfig } from '@/lib/github'
 
 function slugify(text: string): string {
   return text
@@ -29,7 +27,7 @@ function slugify(text: string): string {
 }
 
 export function PostEditor() {
-  const { isEditorOpen, closeEditor, editingPost, addPostToList, updatePostInList, githubConfig, githubSynced } = useBlogStore()
+  const { isEditorOpen, closeEditor, editingPost, addPostToList, updatePostInList } = useBlogStore()
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [excerpt, setExcerpt] = useState('')
@@ -91,50 +89,35 @@ export function PostEditor() {
         authorName,
       }
 
-      if (githubSynced && githubConfig) {
-        // Push directly to GitHub API
-        try {
-          const saved = await clientSavePost(githubConfig as GitHubConfig, postData, editingPost?.sha)
-          if (editingPost) {
-            updatePostInList(saved)
-            toast.success('Post pushed to GitHub')
-          } else {
-            addPostToList(saved)
-            toast.success('Post created on GitHub')
-          }
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : 'Failed to push to GitHub')
-          return
-        }
+      const body = { ...postData }
+      let res
+      if (editingPost) {
+        res = await fetch(`/api/posts/${editingPost.slug}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
       } else {
-        // Save locally
-        const body = { ...postData }
-        let res
-        if (editingPost) {
-          res = await fetch(`/api/posts/${editingPost.slug}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          })
-        } else {
-          res = await fetch('/api/posts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          })
-        }
-        const data = await res.json()
-        if (!res.ok) {
-          toast.error(data.error || 'Failed to save post')
-          return
-        }
-        if (editingPost) {
-          updatePostInList(data.post)
-          toast.success('Post updated successfully')
-        } else {
-          addPostToList(data.post)
-          toast.success('Post created successfully')
-        }
+        res = await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+      }
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to save post')
+        return
+      }
+      if (editingPost) {
+        updatePostInList(data.post)
+      } else {
+        addPostToList(data.post)
+      }
+      if (data.githubSync === 'ok') {
+        toast.success(editingPost ? 'Post updated & synced to GitHub' : 'Post published & synced to GitHub')
+      } else {
+        toast.warning(`Saved, but GitHub sync failed: ${data.githubSyncError || 'unknown error'}`)
       }
       closeEditor()
     } catch {
@@ -160,7 +143,6 @@ export function PostEditor() {
         {/* Header */}
         <DialogHeader className="flex flex-row items-center justify-between border-b border-border/50 px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-            {githubSynced && <Cloud className="h-4 w-4 text-primary" />}
             {editingPost ? 'Edit Post' : 'New Post'}
           </DialogTitle>
           <div className="flex items-center gap-2">

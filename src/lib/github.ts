@@ -68,7 +68,9 @@ function parsePostFromMatter(content: string, sha?: string): BlogPost {
   }
 }
 
-function postToMatter(post: Omit<BlogPost, 'id' | 'readTime' | 'authorAvatar' | 'githubUrl'>): string {
+function postToMatter(
+  post: Omit<BlogPost, 'id' | 'readTime' | 'authorAvatar' | 'githubUrl' | 'createdAt' | 'updatedAt'>,
+): string {
   const fm: Record<string, unknown> = {
     title: post.title,
     slug: post.slug,

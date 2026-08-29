@@ -17,13 +17,6 @@ export interface BlogPost {
   sha?: string
 }
 
-export interface GitHubConfig {
-  owner: string
-  repo: string
-  token: string
-  branch: string
-}
-
 interface BlogState {
   // View state
   view: 'home' | 'post'
@@ -39,10 +32,6 @@ interface BlogState {
   activeTag: string | null
   allTags: string[]
 
-  // GitHub
-  githubConfig: GitHubConfig | null
-  githubSynced: boolean
-
   // Actions
   setView: (view: 'home' | 'post') => void
   selectPost: (post: BlogPost | null) => void
@@ -57,14 +46,9 @@ interface BlogState {
   removePostFromList: (id: string) => void
   updatePostInList: (post: BlogPost) => void
   addPostToList: (post: BlogPost) => void
-
-  // GitHub actions
-  setGithubConfig: (config: GitHubConfig | null) => void
-  setGithubSynced: (synced: boolean) => void
-  loadGithubConfig: () => void
 }
 
-export const useBlogStore = create<BlogState>((set, get) => ({
+export const useBlogStore = create<BlogState>((set) => ({
   view: 'home',
   selectedPost: null,
   posts: [],
@@ -77,8 +61,6 @@ export const useBlogStore = create<BlogState>((set, get) => ({
   searchQuery: '',
   activeTag: null,
   allTags: [],
-  githubConfig: null,
-  githubSynced: false,
 
   setView: (view) => set({ view }),
   selectPost: (post) => set({ selectedPost: post, view: post ? 'post' : 'home' }),
@@ -101,28 +83,4 @@ export const useBlogStore = create<BlogState>((set, get) => ({
     posts: [post, ...s.posts],
     totalPosts: s.totalPosts + 1,
   })),
-
-  setGithubConfig: (githubConfig) => {
-    set({ githubConfig, githubSynced: !!githubConfig })
-    if (typeof window !== 'undefined') {
-      if (githubConfig) {
-        localStorage.setItem('blog-github-config', JSON.stringify(githubConfig))
-      } else {
-        localStorage.removeItem('blog-github-config')
-      }
-    }
-  },
-  setGithubSynced: (githubSynced) => set({ githubSynced }),
-  loadGithubConfig: () => {
-    if (typeof window === 'undefined') return
-    const raw = localStorage.getItem('blog-github-config')
-    if (raw) {
-      try {
-        const config = JSON.parse(raw) as GitHubConfig
-        set({ githubConfig: config, githubSynced: true })
-      } catch {
-        localStorage.removeItem('blog-github-config')
-      }
-    }
-  },
 }))

@@ -3,15 +3,14 @@
 import { useBlogStore } from '@/stores/blog-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, ArrowLeft, Github, Trash2, Edit3, Tag } from 'lucide-react'
+import { Calendar, Clock, ArrowLeft, Trash2, Edit3, Tag } from 'lucide-react'
 import { format } from 'date-fns'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { clientDeletePost } from '@/lib/github-client'
-import type { GitHubConfig } from '@/lib/github'
+import { useSession } from '@/hooks/use-session'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,26 +24,17 @@ import {
 } from '@/components/ui/alert-dialog'
 
 export function PostDetail() {
-  const { selectedPost, selectPost, openEditor, removePostFromList, setView, githubConfig, githubSynced } = useBlogStore()
+  const { selectedPost, selectPost, openEditor, removePostFromList, setView } = useBlogStore()
+  const session = useSession()
 
   const handleDelete = async () => {
     if (!selectedPost) return
     try {
-      if (githubSynced && githubConfig) {
-        // Delete directly from GitHub
-        try {
-          await clientDeletePost(githubConfig as GitHubConfig, selectedPost.slug, selectedPost.sha!)
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : 'Failed to delete from GitHub')
-          return
-        }
-      } else {
-        // Delete locally
-        const res = await fetch(`/api/posts/${selectedPost.slug}`, { method: 'DELETE' })
-        if (!res.ok) {
-          toast.error('Failed to delete post')
-          return
-        }
+      const res = await fetch(`/api/posts/${selectedPost.slug}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to delete post')
+        return
       }
       removePostFromList(selectedPost.slug)
       setView('home')
@@ -120,52 +110,46 @@ export function PostDetail() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="mt-4 flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 rounded-full text-xs"
-              onClick={() => openEditor(selectedPost)}
-            >
-              <Edit3 className="h-3 w-3" />
-              Edit
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 rounded-full text-xs text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this post?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. The post &quot;{selectedPost.title}&quot; will be permanently deleted.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            {selectedPost.githubUrl && (
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs" asChild>
-                <a href={selectedPost.githubUrl} target="_blank" rel="noopener noreferrer">
-                  <Github className="h-3 w-3" />
-                  Source
-                </a>
+          {/* Actions - owner only */}
+          {session?.authenticated && (
+            <div className="mt-4 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 rounded-full text-xs"
+                onClick={() => openEditor(selectedPost)}
+              >
+                <Edit3 className="h-3 w-3" />
+                Edit
               </Button>
-            )}
-          </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 rounded-full text-xs text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. The post &quot;{selectedPost.title}&quot; will be permanently deleted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </header>
 
         {/* Divider */}

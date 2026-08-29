@@ -6,11 +6,11 @@ import { useBlogStore } from '@/stores/blog-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tag, BookOpen, ChevronLeft, ChevronRight, Cloud } from 'lucide-react'
+import { Tag, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { clientListPosts } from '@/lib/github-client'
-import type { GitHubConfig } from '@/lib/github'
-import { toast } from 'sonner'
+import { BASE_PATH, STATIC_MODE } from '@/lib/client-config'
+
+const PAGE_SIZE = 10
 
 type PostData = {
   id: string
@@ -39,8 +39,6 @@ export function PostList() {
     searchQuery,
     activeTag,
     allTags,
-    githubConfig,
-    githubSynced,
     setPosts,
     setPage,
     setLoading,
@@ -55,12 +53,9 @@ export function PostList() {
     return Array.from(tagSet).sort()
   }
 
-  const fetchFromGithub = useCallback(async () => {
-    if (!githubConfig) return
-    setLoading(true)
-    try {
-      const allPosts = await clientListPosts(githubConfig as GitHubConfig)
-      let filtered = allPosts.filter((p) => p.published)
+  const filterAndPaginate = useCallback(
+    (all: PostData[]) => {
+      let filtered = all.filter((p) => p.published)
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         filtered = filtered.filter(
@@ -73,34 +68,40 @@ export function PostList() {
       if (activeTag) {
         filtered = filtered.filter((p) => p.tags?.includes(activeTag))
       }
-
       const total = filtered.length
-      const tp = Math.ceil(total / 10)
-      const start = (currentPage - 1) * 10
-      const paged = filtered.slice(start, start + 10)
+      const totalPagesLocal = Math.ceil(total / PAGE_SIZE)
+      const start = (currentPage - 1) * PAGE_SIZE
+      setPosts(filtered.slice(start, start + PAGE_SIZE), total, totalPagesLocal)
+      setAllTags(extractTags(all))
+    },
+    [searchQuery, activeTag, currentPage, setPosts, setAllTags],
+  )
 
-      setPosts(paged, total, tp)
-      setAllTags(extractTags(allPosts))
+  const fetchStatic = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${BASE_PATH}/posts.json`)
+      const data = await res.json()
+      filterAndPaginate(data.posts ?? [])
     } catch (err) {
-      console.error('Failed to fetch from GitHub:', err)
-      toast.error('Failed to connect to GitHub. Check your settings.')
+      console.error('Failed to fetch static posts:', err)
     } finally {
       setLoading(false)
     }
-  }, [githubConfig, searchQuery, activeTag, currentPage, setPosts, setLoading, setAllTags])
+  }, [filterAndPaginate, setLoading])
 
   const fetchLocal = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        limit: '10',
+        limit: String(PAGE_SIZE),
         published: 'true',
       })
       if (searchQuery) params.set('search', searchQuery)
       if (activeTag) params.set('tag', activeTag)
 
-      const res = await fetch(`/api/posts?${params}`)
+      const res = await fetch(`${BASE_PATH}/api/posts?${params}`)
       const data = await res.json()
       if (data.posts) {
         setPosts(data.posts, data.pagination.total, data.pagination.totalPages)
@@ -113,28 +114,16 @@ export function PostList() {
     }
   }, [currentPage, searchQuery, activeTag, setPosts, setLoading, setAllTags])
 
-  const fetchPosts = useCallback(() => {
-    if (githubSynced && githubConfig) {
-      fetchFromGithub()
+  useEffect(() => {
+    if (STATIC_MODE) {
+      fetchStatic()
     } else {
       fetchLocal()
     }
-  }, [githubSynced, githubConfig, fetchFromGithub, fetchLocal])
-
-  useEffect(() => {
-    fetchPosts()
-  }, [fetchPosts])
+  }, [STATIC_MODE, fetchStatic, fetchLocal])
 
   return (
     <div className="space-y-6">
-      {/* Sync indicator */}
-      {githubSynced && (
-        <div className="flex items-center gap-1.5 rounded-full bg-primary/8 px-3 py-1.5 text-xs font-medium text-primary w-fit">
-          <Cloud className="h-3 w-3" />
-          Synced with GitHub
-        </div>
-      )}
-
       {/* Tags Filter */}
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-2">

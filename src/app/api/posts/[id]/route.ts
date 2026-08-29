@@ -1,4 +1,6 @@
 import { getLocalPost, saveLocalPost, deleteLocalPost } from '@/lib/posts'
+import { getSession } from '@/lib/auth'
+import { syncPostToRepo, removePostFromRepo } from '@/lib/sync'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -23,6 +25,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     const body = await req.json()
 
@@ -47,7 +54,21 @@ export async function PUT(
       authorName: body.authorName ?? existing.authorName,
     })
 
-    return NextResponse.json({ post })
+    let githubSync: 'ok' | 'failed' = 'ok'
+    let githubSyncError: string | undefined
+    try {
+      // Slug changed: drop the old markdown file before writing the new one
+      if (newSlug !== existing.slug) {
+        await removePostFromRepo(session.token, existing.slug)
+      }
+      await syncPostToRepo(session.token, post)
+    } catch (err) {
+      githubSync = 'failed'
+      githubSyncError = err instanceof Error ? err.message : 'GitHub sync failed'
+      console.error('GitHub sync failed for updated post:', err)
+    }
+
+    return NextResponse.json({ post, githubSync, githubSyncError })
   } catch (error) {
     console.error('Error updating post:', error)
     return NextResponse.json({ error: 'Failed to update post' }, { status: 500 })
@@ -60,11 +81,27 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const ok = await deleteLocalPost(id)
     if (!ok) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
-    return NextResponse.json({ success: true })
+
+    let githubSync: 'ok' | 'failed' = 'ok'
+    let githubSyncError: string | undefined
+    try {
+      await removePostFromRepo(session.token, id)
+    } catch (err) {
+      githubSync = 'failed'
+      githubSyncError = err instanceof Error ? err.message : 'GitHub sync failed'
+      console.error('GitHub sync failed for deleted post:', err)
+    }
+
+    return NextResponse.json({ success: true, githubSync, githubSyncError })
   } catch (error) {
     console.error('Error deleting post:', error)
     return NextResponse.json({ error: 'Failed to delete post' }, { status: 500 })

@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import { Header } from '@/components/blog/header'
 import { Footer } from '@/components/blog/footer'
 import { Hero } from '@/components/blog/hero'
@@ -10,12 +9,7 @@ import { PostEditor } from '@/components/blog/post-editor'
 import { useBlogStore } from '@/stores/blog-store'
 
 export default function Home() {
-  const { view, loadGithubConfig } = useBlogStore()
-
-  // Load saved GitHub config from localStorage
-  useEffect(() => {
-    loadGithubConfig()
-  }, [loadGithubConfig])
+  const { view } = useBlogStore()
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
