@@ -144,6 +144,17 @@
   line-height: 1.35;
 }
 
+/* Editor preview: markdown headings sit below the page-level title */
+.prose-editor-preview h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+}
+
+.prose-editor-preview h2 {
+  font-size: 1.125rem;
+}
+
 .prose-blog h3 {
   font-size: 1.25rem;
   font-weight: 600;

@@ -113,7 +113,6 @@ export function PostEditor() {
       } else {
         toast.warning(`Saved, but GitHub sync failed: ${data.githubSyncError || 'unknown error'}`)
       }
-      closeEditor()
     } catch {
       toast.error('Failed to save post')
     } finally {
@@ -167,7 +166,7 @@ export function PostEditor() {
         <div className="custom-scrollbar overflow-y-auto">
           <h1 className="mb-2 text-2xl font-bold tracking-tight">{title || 'Untitled'}</h1>
           {excerpt && <p className="mb-6 text-muted-foreground">{excerpt}</p>}
-          <div className="prose-blog [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg">
+          <div className="prose-blog prose-editor-preview">
             <ReactMarkdown>{content || '*Start writing...*'}</ReactMarkdown>
           </div>
         </div>
