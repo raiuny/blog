@@ -7,14 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { Loader2, Eye } from 'lucide-react'
+import { Loader2, Eye, ArrowLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 function slugify(text: string): string {
@@ -132,144 +126,142 @@ export function PostEditor() {
       e.preventDefault()
       handleSave()
     }
-    if (e.key === 'Escape' && !e.shiftKey) {
-      closeEditor()
-    }
   }
 
   return (
-    <Dialog open={isEditorOpen} onOpenChange={(open) => { if (!open) closeEditor() }}>
-      <DialogContent className="flex h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:h-[85vh]">
-        {/* Header */}
-        <DialogHeader className="flex flex-row items-center justify-between border-b border-border/50 px-6 py-4">
-          <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-            {editingPost ? 'Edit Post' : 'New Post'}
-          </DialogTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={preview ? 'default' : 'outline'}
-              size="sm"
-              className="h-8 gap-1.5 rounded-full text-xs"
-              onClick={() => setPreview(!preview)}
-            >
-              <Eye className="h-3 w-3" />
-              {preview ? 'Edit' : 'Preview'}
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-              {editingPost ? 'Update' : 'Publish'}
-            </Button>
+    <div onKeyDown={handleKeyDown} className="flex flex-col">
+      {/* Top bar */}
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={closeEditor}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {editingPost ? 'Edit Post' : 'New Post'}
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={preview ? 'default' : 'outline'}
+            size="sm"
+            className="h-9 gap-1.5 rounded-full text-xs"
+            onClick={() => setPreview(!preview)}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {preview ? 'Edit' : 'Preview'}
+          </Button>
+          <Button
+            size="sm"
+            className="h-9 gap-1.5 rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+            {editingPost ? 'Update' : 'Publish'}
+          </Button>
+        </div>
+      </div>
+
+      {preview ? (
+        <div className="custom-scrollbar overflow-y-auto">
+          <h1 className="mb-2 text-2xl font-bold tracking-tight">{title || 'Untitled'}</h1>
+          {excerpt && <p className="mb-6 text-muted-foreground">{excerpt}</p>}
+          <div className="prose-blog [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg">
+            <ReactMarkdown>{content || '*Start writing...*'}</ReactMarkdown>
           </div>
-        </DialogHeader>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">Title</Label>
+            <Input
+              ref={titleRef}
+              id="title"
+              placeholder="Your post title..."
+              value={title}
+              onChange={handleTitleChange}
+              className="h-14 border-0 bg-secondary/50 text-2xl font-bold tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50 focus-visible:ring-1"
+            />
+          </div>
 
-        {/* Body */}
-        <div className="flex min-h-0 flex-1 overflow-hidden" onKeyDown={handleKeyDown}>
-          {preview ? (
-            <div className="custom-scrollbar flex-1 overflow-y-auto p-6">
-              <h1 className="mb-2 text-2xl font-bold">{title || 'Untitled'}</h1>
-              {excerpt && <p className="mb-6 text-muted-foreground">{excerpt}</p>}
-              <div className="prose-blog">
-                <ReactMarkdown>{content || '*Start writing...*'}</ReactMarkdown>
-              </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="slug" className="text-xs font-medium text-muted-foreground">Slug</Label>
+              <Input
+                id="slug"
+                placeholder="post-url-slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
+              />
             </div>
-          ) : (
-            <div className="custom-scrollbar flex-1 space-y-5 overflow-y-auto p-6">
-              <div className="space-y-1.5">
-                <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">Title</Label>
-                <Input
-                  ref={titleRef}
-                  id="title"
-                  placeholder="Your post title..."
-                  value={title}
-                  onChange={handleTitleChange}
-                  className="border-0 bg-secondary/50 text-xl font-semibold placeholder:text-muted-foreground/50 focus-visible:ring-1"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="author" className="text-xs font-medium text-muted-foreground">Author</Label>
+              <Input
+                id="author"
+                placeholder="Author name"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
+              />
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="slug" className="text-xs font-medium text-muted-foreground">Slug</Label>
-                  <Input
-                    id="slug"
-                    placeholder="post-url-slug"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="author" className="text-xs font-medium text-muted-foreground">Author</Label>
-                  <Input
-                    id="author"
-                    placeholder="Author name"
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
-                  />
-                </div>
-              </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="excerpt" className="text-xs font-medium text-muted-foreground">Excerpt</Label>
+            <Input
+              id="excerpt"
+              placeholder="A brief description of your post..."
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
+            />
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="excerpt" className="text-xs font-medium text-muted-foreground">Excerpt</Label>
-                <Input
-                  id="excerpt"
-                  placeholder="A brief description of your post..."
-                  value={excerpt}
-                  onChange={(e) => setExcerpt(e.target.value)}
-                  className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="content" className="text-xs font-medium text-muted-foreground">Content (Markdown)</Label>
-                  <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter to save</span>
-                </div>
-                <Textarea
-                  id="content"
-                  ref={contentRef}
-                  placeholder="# Hello World
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="content" className="text-xs font-medium text-muted-foreground">Content (Markdown)</Label>
+              <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter to save</span>
+            </div>
+            <Textarea
+              id="content"
+              ref={contentRef}
+              placeholder="# Hello World
 
 Write your content in **Markdown**...
 
 ```typescript
 console.log('Hello')
 ```"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="custom-scrollbar min-h-[300px] resize-none border-0 bg-secondary/50 font-mono text-sm leading-relaxed placeholder:text-muted-foreground/50 focus-visible:ring-1"
-                />
-              </div>
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="custom-scrollbar min-h-[55vh] resize-none border-0 bg-secondary/50 font-mono text-sm leading-relaxed placeholder:text-muted-foreground/50 focus-visible:ring-1"
+            />
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="tags" className="text-xs font-medium text-muted-foreground">Tags (comma separated)</Label>
-                <Input
-                  id="tags"
-                  placeholder="Next.js, React, Tutorial"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
-                />
-              </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tags" className="text-xs font-medium text-muted-foreground">Tags (comma separated)</Label>
+            <Input
+              id="tags"
+              placeholder="Next.js, React, Tutorial"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
+            />
+          </div>
 
-              <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium">Publish</p>
-                  <p className="text-xs text-muted-foreground">
-                    {published ? 'This post will be visible to everyone' : 'This post will be saved as a draft'}
-                  </p>
-                </div>
-                <Switch checked={published} onCheckedChange={setPublished} />
-              </div>
+          <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Publish</p>
+              <p className="text-xs text-muted-foreground">
+                {published ? 'This post will be visible to everyone' : 'This post will be saved as a draft'}
+              </p>
             </div>
-          )}
+            <Switch checked={published} onCheckedChange={setPublished} />
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   )
 }

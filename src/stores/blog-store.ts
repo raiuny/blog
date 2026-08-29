@@ -19,7 +19,7 @@ export interface BlogPost {
 
 interface BlogState {
   // View state
-  view: 'home' | 'post'
+  view: 'home' | 'post' | 'editor'
   selectedPost: BlogPost | null
   posts: BlogPost[]
   totalPosts: number
@@ -33,7 +33,7 @@ interface BlogState {
   allTags: string[]
 
   // Actions
-  setView: (view: 'home' | 'post') => void
+  setView: (view: 'home' | 'post' | 'editor') => void
   selectPost: (post: BlogPost | null) => void
   setPosts: (posts: BlogPost[], total: number, totalPages: number) => void
   setPage: (page: number) => void
@@ -67,8 +67,9 @@ export const useBlogStore = create<BlogState>((set) => ({
   setPosts: (posts, total, totalPages) => set({ posts, totalPosts: total, totalPages }),
   setPage: (page) => set({ currentPage: page }),
   setLoading: (isLoading) => set({ isLoading }),
-  openEditor: (post) => set({ isEditorOpen: true, editingPost: post || null }),
-  closeEditor: () => set({ isEditorOpen: false, editingPost: null }),
+  openEditor: (post) => set({ isEditorOpen: true, editingPost: post || null, view: 'editor' }),
+  // Return to the post we came from, or home
+  closeEditor: () => set((s) => ({ isEditorOpen: false, editingPost: null, view: s.selectedPost ? 'post' : 'home' })),
   setSearch: (searchQuery) => set({ searchQuery, currentPage: 1 }),
   setTag: (tag) => set({ activeTag: tag, currentPage: 1 }),
   setAllTags: (allTags) => set({ allTags }),
