@@ -12,7 +12,7 @@ import { useState, useEffect, useRef } from 'react'
 const GITHUB_PROFILE_URL = 'https://github.com/raiuny'
 
 export function Header() {
-  const { view, setView, openEditor, searchQuery, setSearch, selectedPost } = useBlogStore()
+  const { view, setView, openEditor, searchQuery, setSearch } = useBlogStore()
   const session = useSession()
   const [showSearch, setShowSearch] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -66,7 +66,7 @@ export function Header() {
               <Github className="h-4 w-4" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-foreground">
-              {view === 'post' && selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : "raiuny's blog"}
+              raiuny&apos;s blog
             </span>
           </button>
         </div>
