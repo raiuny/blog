@@ -44,10 +44,10 @@ export function Header() {
             className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-sm font-bold">B</span>
+              <Github className="h-4 w-4" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-foreground">
-              {selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : 'Blog' }
+              {selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : "raiuny's blog" }
             </span>
           </button>
         </div>
