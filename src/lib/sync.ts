@@ -7,8 +7,9 @@ export interface RepoConfig {
   token: string
   branch: string
 }
-
-export function repoConfig(token: string): RepoConfig {
+export function repoConfig(): RepoConfig {
+  const token = process.env.GITHUB_TOKEN
+  if (!token) throw new Error('GITHUB_TOKEN is not configured')
   return {
     owner: process.env.OWNER_GITHUB_LOGIN || 'raiuny',
     repo: process.env.GITHUB_REPO || 'blog',
@@ -18,8 +19,8 @@ export function repoConfig(token: string): RepoConfig {
 }
 
 /** Upsert the markdown file for a post in the GitHub repo. */
-export async function syncPostToRepo(token: string, post: BlogPost): Promise<void> {
-  const config = repoConfig(token)
+export async function syncPostToRepo(post: BlogPost): Promise<void> {
+  const config = repoConfig()
   const existing = await getGitHubPost(config, post.slug)
   await saveGitHubPost(
     config,
@@ -37,8 +38,8 @@ export async function syncPostToRepo(token: string, post: BlogPost): Promise<voi
 }
 
 /** Delete the markdown file for a slug from the GitHub repo (no-op if absent). */
-export async function removePostFromRepo(token: string, slug: string): Promise<void> {
-  const config = repoConfig(token)
+export async function removePostFromRepo(slug: string): Promise<void> {
+  const config = repoConfig()
   const existing = await getGitHubPost(config, slug)
   if (existing?.sha) {
     await deleteGitHubPost(config, slug, existing.sha)

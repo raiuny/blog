@@ -59,9 +59,9 @@ export async function PUT(
     try {
       // Slug changed: drop the old markdown file before writing the new one
       if (newSlug !== existing.slug) {
-        await removePostFromRepo(session.token, existing.slug)
+        await removePostFromRepo(existing.slug)
       }
-      await syncPostToRepo(session.token, post)
+      await syncPostToRepo(post)
     } catch (err) {
       githubSync = 'failed'
       githubSyncError = err instanceof Error ? err.message : 'GitHub sync failed'
@@ -94,7 +94,7 @@ export async function DELETE(
     let githubSync: 'ok' | 'failed' = 'ok'
     let githubSyncError: string | undefined
     try {
-      await removePostFromRepo(session.token, id)
+      await removePostFromRepo(id)
     } catch (err) {
       githubSync = 'failed'
       githubSyncError = err instanceof Error ? err.message : 'GitHub sync failed'

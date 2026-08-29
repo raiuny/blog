@@ -1,6 +1,7 @@
 'use client'
 
-import { Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink, LogIn } from 'lucide-react'
+import { Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink, LogIn, LogOut } from 'lucide-react'
+import { SignInDialog } from './sign-in-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useBlogStore } from '@/stores/blog-store'
@@ -27,21 +28,18 @@ export function Header() {
     setView('home')
     useBlogStore.getState().selectPost(null)
   }
-
   const authed = session?.authenticated === true
-
   const signInButton = (
-    <Button
-      variant="outline"
-      size="sm"
-      asChild
-      className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
-    >
-      <a href={`${BASE_PATH}/api/auth/github`}>
+    <SignInDialog>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+      >
         <LogIn className="h-3.5 w-3.5" />
         <span className="text-xs font-medium">Sign in</span>
-      </a>
-    </Button>
+      </Button>
+    </SignInDialog>
   )
 
   return (
@@ -107,16 +105,17 @@ export function Header() {
           )}
           {authed && (
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openEditor()}
-              className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+              variant="ghost"
+              size="icon"
+              asChild
+              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
             >
-              <PenSquare className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">Write</span>
+              <a href={`${BASE_PATH}/api/auth/logout`} title="Sign out">
+                <LogOut className="h-4 w-4" />
+                <span className="sr-only">Sign out</span>
+              </a>
             </Button>
           )}
-          {!authed && !STATIC_MODE && signInButton}
           <Button
             variant="ghost"
             size="icon"
@@ -128,16 +127,6 @@ export function Header() {
               <span className="sr-only">GitHub profile</span>
             </a>
           </Button>
-          {authed && session.avatar && (
-            <a href={`${BASE_PATH}/api/auth/logout`} title={`Sign out (${session.login})`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={session.avatar}
-                alt={session.login}
-                className="h-8 w-8 rounded-full border border-border/60"
-              />
-            </a>
-          )}
         </div>
 
         {/* Right - Mobile */}

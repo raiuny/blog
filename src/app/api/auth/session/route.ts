@@ -4,10 +4,5 @@ import { getSession } from '@/lib/auth'
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ authenticated: false })
-  return NextResponse.json({
-    authenticated: true,
-    login: session.login,
-    name: session.name,
-    avatar: session.avatar,
-  })
+  return NextResponse.json({ authenticated: true, login: session.login })
 }

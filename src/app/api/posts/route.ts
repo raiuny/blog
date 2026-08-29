@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     let githubSync: 'ok' | 'failed' = 'ok'
     let githubSyncError: string | undefined
     try {
-      await syncPostToRepo(session.token, newPost)
+      await syncPostToRepo(newPost)
     } catch (err) {
       githubSync = 'failed'
       githubSyncError = err instanceof Error ? err.message : 'GitHub sync failed'
