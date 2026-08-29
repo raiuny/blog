@@ -4,9 +4,8 @@ export interface BlogPost {
   id: string
   title: string
   slug: string
-  excerpt: string | null
+  excerpt: string
   content: string
-  coverImage: string | null
   tags: string
   published: boolean
   authorName: string
@@ -15,6 +14,14 @@ export interface BlogPost {
   readTime: number
   createdAt: string
   updatedAt: string
+  sha?: string
+}
+
+export interface GitHubConfig {
+  owner: string
+  repo: string
+  token: string
+  branch: string
 }
 
 interface BlogState {
@@ -32,6 +39,10 @@ interface BlogState {
   activeTag: string | null
   allTags: string[]
 
+  // GitHub
+  githubConfig: GitHubConfig | null
+  githubSynced: boolean
+
   // Actions
   setView: (view: 'home' | 'post') => void
   selectPost: (post: BlogPost | null) => void
@@ -46,9 +57,14 @@ interface BlogState {
   removePostFromList: (id: string) => void
   updatePostInList: (post: BlogPost) => void
   addPostToList: (post: BlogPost) => void
+
+  // GitHub actions
+  setGithubConfig: (config: GitHubConfig | null) => void
+  setGithubSynced: (synced: boolean) => void
+  loadGithubConfig: () => void
 }
 
-export const useBlogStore = create<BlogState>((set) => ({
+export const useBlogStore = create<BlogState>((set, get) => ({
   view: 'home',
   selectedPost: null,
   posts: [],
@@ -61,6 +77,8 @@ export const useBlogStore = create<BlogState>((set) => ({
   searchQuery: '',
   activeTag: null,
   allTags: [],
+  githubConfig: null,
+  githubSynced: false,
 
   setView: (view) => set({ view }),
   selectPost: (post) => set({ selectedPost: post, view: post ? 'post' : 'home' }),
@@ -73,14 +91,38 @@ export const useBlogStore = create<BlogState>((set) => ({
   setTag: (tag) => set({ activeTag: tag, currentPage: 1 }),
   setAllTags: (allTags) => set({ allTags }),
   removePostFromList: (id) => set((s) => ({
-    posts: s.posts.filter((p) => p.id !== id),
+    posts: s.posts.filter((p) => p.id !== id && p.slug !== id),
     totalPosts: s.totalPosts - 1,
   })),
   updatePostInList: (post) => set((s) => ({
-    posts: s.posts.map((p) => (p.id === post.id ? post : p)),
+    posts: s.posts.map((p) => (p.slug === post.slug || p.id === post.id ? post : p)),
   })),
   addPostToList: (post) => set((s) => ({
     posts: [post, ...s.posts],
     totalPosts: s.totalPosts + 1,
   })),
+
+  setGithubConfig: (githubConfig) => {
+    set({ githubConfig, githubSynced: !!githubConfig })
+    if (typeof window !== 'undefined') {
+      if (githubConfig) {
+        localStorage.setItem('blog-github-config', JSON.stringify(githubConfig))
+      } else {
+        localStorage.removeItem('blog-github-config')
+      }
+    }
+  },
+  setGithubSynced: (githubSynced) => set({ githubSynced }),
+  loadGithubConfig: () => {
+    if (typeof window === 'undefined') return
+    const raw = localStorage.getItem('blog-github-config')
+    if (raw) {
+      try {
+        const config = JSON.parse(raw) as GitHubConfig
+        set({ githubConfig: config, githubSynced: true })
+      } catch {
+        localStorage.removeItem('blog-github-config')
+      }
+    }
+  },
 }))

@@ -1,10 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useBlogStore } from '@/stores/blog-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Calendar, Clock, ArrowLeft, Github, Trash2, Edit3, Tag } from 'lucide-react'
 import { format } from 'date-fns'
 import ReactMarkdown from 'react-markdown'
@@ -12,6 +10,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { clientDeletePost } from '@/lib/github-client'
+import type { GitHubConfig } from '@/lib/github'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,18 +25,31 @@ import {
 } from '@/components/ui/alert-dialog'
 
 export function PostDetail() {
-  const { selectedPost, selectPost, openEditor, removePostFromList, setView } = useBlogStore()
+  const { selectedPost, selectPost, openEditor, removePostFromList, setView, githubConfig, githubSynced } = useBlogStore()
 
   const handleDelete = async () => {
     if (!selectedPost) return
     try {
-      const res = await fetch(`/api/posts/${selectedPost.id}`, { method: 'DELETE' })
-      if (res.ok) {
-        removePostFromList(selectedPost.id)
-        setView('home')
-        selectPost(null)
-        toast.success('Post deleted successfully')
+      if (githubSynced && githubConfig) {
+        // Delete directly from GitHub
+        try {
+          await clientDeletePost(githubConfig as GitHubConfig, selectedPost.slug, selectedPost.sha!)
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Failed to delete from GitHub')
+          return
+        }
+      } else {
+        // Delete locally
+        const res = await fetch(`/api/posts/${selectedPost.slug}`, { method: 'DELETE' })
+        if (!res.ok) {
+          toast.error('Failed to delete post')
+          return
+        }
       }
+      removePostFromList(selectedPost.slug)
+      setView('home')
+      selectPost(null)
+      toast.success('Post deleted successfully')
     } catch {
       toast.error('Failed to delete post')
     }

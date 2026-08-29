@@ -6,8 +6,28 @@ import { useBlogStore } from '@/stores/blog-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tag, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Tag, BookOpen, ChevronLeft, ChevronRight, Cloud } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { clientListPosts } from '@/lib/github-client'
+import type { GitHubConfig } from '@/lib/github'
+import { toast } from 'sonner'
+
+type PostData = {
+  id: string
+  slug: string
+  title: string
+  excerpt: string
+  content: string
+  tags: string
+  published: boolean
+  authorName: string
+  authorAvatar: string | null
+  githubUrl: string | null
+  readTime: number
+  createdAt: string
+  updatedAt: string
+  sha?: string
+}
 
 export function PostList() {
   const {
@@ -19,13 +39,57 @@ export function PostList() {
     searchQuery,
     activeTag,
     allTags,
+    githubConfig,
+    githubSynced,
     setPosts,
     setPage,
     setLoading,
     setAllTags,
   } = useBlogStore()
 
-  const fetchPosts = useCallback(async () => {
+  const extractTags = (list: PostData[]) => {
+    const tagSet = new Set<string>()
+    list.forEach((p) => {
+      p.tags?.split(',').map((t) => t.trim()).filter(Boolean).forEach((t) => tagSet.add(t))
+    })
+    return Array.from(tagSet).sort()
+  }
+
+  const fetchFromGithub = useCallback(async () => {
+    if (!githubConfig) return
+    setLoading(true)
+    try {
+      const allPosts = await clientListPosts(githubConfig as GitHubConfig)
+      let filtered = allPosts.filter((p) => p.published)
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        filtered = filtered.filter(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            p.excerpt?.toLowerCase().includes(q) ||
+            p.content.toLowerCase().includes(q),
+        )
+      }
+      if (activeTag) {
+        filtered = filtered.filter((p) => p.tags?.includes(activeTag))
+      }
+
+      const total = filtered.length
+      const tp = Math.ceil(total / 10)
+      const start = (currentPage - 1) * 10
+      const paged = filtered.slice(start, start + 10)
+
+      setPosts(paged, total, tp)
+      setAllTags(extractTags(allPosts))
+    } catch (err) {
+      console.error('Failed to fetch from GitHub:', err)
+      toast.error('Failed to connect to GitHub. Check your settings.')
+    } finally {
+      setLoading(false)
+    }
+  }, [githubConfig, searchQuery, activeTag, currentPage, setPosts, setLoading, setAllTags])
+
+  const fetchLocal = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -40,13 +104,8 @@ export function PostList() {
       const data = await res.json()
       if (data.posts) {
         setPosts(data.posts, data.pagination.total, data.pagination.totalPages)
+        setAllTags(extractTags(data.posts))
       }
-      // Extract all unique tags
-      const tagSet = new Set<string>()
-      data.posts?.forEach((p: { tags: string }) => {
-        p.tags?.split(',').map((t: string) => t.trim()).filter(Boolean).forEach((t: string) => tagSet.add(t))
-      })
-      setAllTags(Array.from(tagSet).sort())
     } catch (err) {
       console.error('Failed to fetch posts:', err)
     } finally {
@@ -54,12 +113,28 @@ export function PostList() {
     }
   }, [currentPage, searchQuery, activeTag, setPosts, setLoading, setAllTags])
 
+  const fetchPosts = useCallback(() => {
+    if (githubSynced && githubConfig) {
+      fetchFromGithub()
+    } else {
+      fetchLocal()
+    }
+  }, [githubSynced, githubConfig, fetchFromGithub, fetchLocal])
+
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
 
   return (
     <div className="space-y-6">
+      {/* Sync indicator */}
+      {githubSynced && (
+        <div className="flex items-center gap-1.5 rounded-full bg-primary/8 px-3 py-1.5 text-xs font-medium text-primary w-fit">
+          <Cloud className="h-3 w-3" />
+          Synced with GitHub
+        </div>
+      )}
+
       {/* Tags Filter */}
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -129,7 +204,7 @@ export function PostList() {
       ) : (
         <div className="space-y-4">
           {posts.map((post, index) => (
-            <PostCard key={post.id} post={post} index={index} />
+            <PostCard key={post.slug} post={post} index={index} />
           ))}
         </div>
       )}

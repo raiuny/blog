@@ -14,8 +14,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { X, Loader2, Eye } from 'lucide-react'
+import { Loader2, Eye, Cloud } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { clientSavePost } from '@/lib/github-client'
+import type { GitHubConfig } from '@/lib/github'
 
 function slugify(text: string): string {
   return text
@@ -27,7 +29,7 @@ function slugify(text: string): string {
 }
 
 export function PostEditor() {
-  const { isEditorOpen, closeEditor, editingPost, addPostToList, updatePostInList } = useBlogStore()
+  const { isEditorOpen, closeEditor, editingPost, addPostToList, updatePostInList, githubConfig, githubSynced } = useBlogStore()
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [excerpt, setExcerpt] = useState('')
@@ -35,7 +37,6 @@ export function PostEditor() {
   const [tags, setTags] = useState('')
   const [published, setPublished] = useState(true)
   const [authorName, setAuthorName] = useState('Anonymous')
-  const [githubUrl, setGithubUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [preview, setPreview] = useState(false)
   const contentRef = useRef<HTMLTextAreaElement>(null)
@@ -51,7 +52,6 @@ export function PostEditor() {
         setTags(editingPost.tags)
         setPublished(editingPost.published)
         setAuthorName(editingPost.authorName)
-        setGithubUrl(editingPost.githubUrl || '')
       } else {
         setTitle('')
         setSlug('')
@@ -60,7 +60,6 @@ export function PostEditor() {
         setTags('')
         setPublished(true)
         setAuthorName('Anonymous')
-        setGithubUrl('')
       }
       setPreview(false)
       setTimeout(() => titleRef.current?.focus(), 100)
@@ -82,35 +81,60 @@ export function PostEditor() {
 
     setSaving(true)
     try {
-      const body = { title, slug, excerpt, content, tags, published, authorName, githubUrl: githubUrl || null }
-
-      let res
-      if (editingPost) {
-        res = await fetch(`/api/posts/${editingPost.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-      } else {
-        res = await fetch('/api/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
+      const postData = {
+        title,
+        slug,
+        excerpt,
+        content,
+        tags,
+        published,
+        authorName,
       }
 
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to save post')
-        return
-      }
-
-      if (editingPost) {
-        updatePostInList(data.post)
-        toast.success('Post updated successfully')
+      if (githubSynced && githubConfig) {
+        // Push directly to GitHub API
+        try {
+          const saved = await clientSavePost(githubConfig as GitHubConfig, postData, editingPost?.sha)
+          if (editingPost) {
+            updatePostInList(saved)
+            toast.success('Post pushed to GitHub')
+          } else {
+            addPostToList(saved)
+            toast.success('Post created on GitHub')
+          }
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Failed to push to GitHub')
+          return
+        }
       } else {
-        addPostToList(data.post)
-        toast.success('Post created successfully')
+        // Save locally
+        const body = { ...postData }
+        let res
+        if (editingPost) {
+          res = await fetch(`/api/posts/${editingPost.slug}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+        } else {
+          res = await fetch('/api/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+        }
+        const data = await res.json()
+        if (!res.ok) {
+          toast.error(data.error || 'Failed to save post')
+          return
+        }
+        if (editingPost) {
+          updatePostInList(data.post)
+          toast.success('Post updated successfully')
+        } else {
+          addPostToList(data.post)
+          toast.success('Post created successfully')
+        }
       }
       closeEditor()
     } catch {
@@ -135,7 +159,8 @@ export function PostEditor() {
       <DialogContent className="flex h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:h-[85vh]">
         {/* Header */}
         <DialogHeader className="flex flex-row items-center justify-between border-b border-border/50 px-6 py-4">
-          <DialogTitle className="text-lg font-semibold">
+          <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+            {githubSynced && <Cloud className="h-4 w-4 text-primary" />}
             {editingPost ? 'Edit Post' : 'New Post'}
           </DialogTitle>
           <div className="flex items-center gap-2">
@@ -163,7 +188,6 @@ export function PostEditor() {
         {/* Body */}
         <div className="flex min-h-0 flex-1 overflow-hidden" onKeyDown={handleKeyDown}>
           {preview ? (
-            /* Preview Mode */
             <div className="custom-scrollbar flex-1 overflow-y-auto p-6">
               <h1 className="mb-2 text-2xl font-bold">{title || 'Untitled'}</h1>
               {excerpt && <p className="mb-6 text-muted-foreground">{excerpt}</p>}
@@ -172,13 +196,9 @@ export function PostEditor() {
               </div>
             </div>
           ) : (
-            /* Edit Mode */
             <div className="custom-scrollbar flex-1 space-y-5 overflow-y-auto p-6">
-              {/* Title */}
               <div className="space-y-1.5">
-                <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">
-                  Title
-                </Label>
+                <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">Title</Label>
                 <Input
                   ref={titleRef}
                   id="title"
@@ -189,12 +209,9 @@ export function PostEditor() {
                 />
               </div>
 
-              {/* Slug & Author row */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="slug" className="text-xs font-medium text-muted-foreground">
-                    Slug
-                  </Label>
+                  <Label htmlFor="slug" className="text-xs font-medium text-muted-foreground">Slug</Label>
                   <Input
                     id="slug"
                     placeholder="post-url-slug"
@@ -204,9 +221,7 @@ export function PostEditor() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="author" className="text-xs font-medium text-muted-foreground">
-                    Author
-                  </Label>
+                  <Label htmlFor="author" className="text-xs font-medium text-muted-foreground">Author</Label>
                   <Input
                     id="author"
                     placeholder="Author name"
@@ -217,11 +232,8 @@ export function PostEditor() {
                 </div>
               </div>
 
-              {/* Excerpt */}
               <div className="space-y-1.5">
-                <Label htmlFor="excerpt" className="text-xs font-medium text-muted-foreground">
-                  Excerpt
-                </Label>
+                <Label htmlFor="excerpt" className="text-xs font-medium text-muted-foreground">Excerpt</Label>
                 <Input
                   id="excerpt"
                   placeholder="A brief description of your post..."
@@ -231,15 +243,10 @@ export function PostEditor() {
                 />
               </div>
 
-              {/* Content */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="content" className="text-xs font-medium text-muted-foreground">
-                    Content (Markdown)
-                  </Label>
-                  <span className="text-[10px] text-muted-foreground/60">
-                    Ctrl+Enter to save
-                  </span>
+                  <Label htmlFor="content" className="text-xs font-medium text-muted-foreground">Content (Markdown)</Label>
+                  <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter to save</span>
                 </div>
                 <Textarea
                   id="content"
@@ -257,35 +264,17 @@ console.log('Hello')
                 />
               </div>
 
-              {/* Tags & GitHub URL */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="tags" className="text-xs font-medium text-muted-foreground">
-                    Tags (comma separated)
-                  </Label>
-                  <Input
-                    id="tags"
-                    placeholder="Next.js, React, Tutorial"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="github" className="text-xs font-medium text-muted-foreground">
-                    GitHub URL (optional)
-                  </Label>
-                  <Input
-                    id="github"
-                    placeholder="https://github.com/..."
-                    value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
-                    className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="tags" className="text-xs font-medium text-muted-foreground">Tags (comma separated)</Label>
+                <Input
+                  id="tags"
+                  placeholder="Next.js, React, Tutorial"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="border-0 bg-secondary/50 text-sm focus-visible:ring-1"
+                />
               </div>
 
-              {/* Published toggle */}
               <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">Publish</p>

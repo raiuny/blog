@@ -1,13 +1,14 @@
 'use client'
 
-import { Github, PenSquare, Search, ArrowLeft, Menu, X } from 'lucide-react'
+import { Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useBlogStore } from '@/stores/blog-store'
+import { GithubSettings } from './github-settings'
 import { useState, useEffect, useRef } from 'react'
 
 export function Header() {
-  const { view, setView, openEditor, searchQuery, setSearch, selectedPost } = useBlogStore()
+  const { view, setView, openEditor, searchQuery, setSearch, selectedPost, githubConfig, githubSynced } = useBlogStore()
   const [showSearch, setShowSearch] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -22,6 +23,10 @@ export function Header() {
     setView('home')
     useBlogStore.getState().selectPost(null)
   }
+
+  const repoUrl = githubConfig
+    ? `https://github.com/${githubConfig.owner}/${githubConfig.repo}`
+    : 'https://github.com'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -47,7 +52,7 @@ export function Header() {
               <Github className="h-4 w-4" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-foreground">
-              {selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : "raiuny's blog" }
+              {selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : "raiuny's blog"}
             </span>
           </button>
         </div>
@@ -93,15 +98,16 @@ export function Header() {
             <PenSquare className="h-3.5 w-3.5" />
             <span className="text-xs font-medium">Write</span>
           </Button>
+          <GithubSettings />
           <Button
             variant="ghost"
             size="icon"
             className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
             asChild
           >
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-              <Github className="h-4 w-4" />
-              <span className="sr-only">GitHub</span>
+            <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              <span className="sr-only">View on GitHub</span>
             </a>
           </Button>
         </div>
@@ -136,14 +142,15 @@ export function Header() {
             onChange={(e) => setSearch(e.target.value)}
             className="mb-3 h-9 bg-secondary/50 border-0"
           />
+          <GithubSettings />
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-2 rounded-lg text-muted-foreground"
+            className="mt-2 w-full justify-start gap-2 rounded-lg text-muted-foreground"
             asChild
           >
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-              <Github className="h-4 w-4" />
+            <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
               View on GitHub
             </a>
           </Button>

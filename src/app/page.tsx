@@ -10,12 +10,12 @@ import { PostEditor } from '@/components/blog/post-editor'
 import { useBlogStore } from '@/stores/blog-store'
 
 export default function Home() {
-  const { view } = useBlogStore()
+  const { view, loadGithubConfig } = useBlogStore()
 
-  // Seed database on first load
+  // Load saved GitHub config from localStorage
   useEffect(() => {
-    fetch('/api/seed', { method: 'POST' }).catch(() => {})
-  }, [])
+    loadGithubConfig()
+  }, [loadGithubConfig])
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
