@@ -38,7 +38,7 @@ jobs:
         run: node scripts/gen-static-data.mjs
 
       - name: Build static export
-        run: STATIC_EXPORT=1 NEXT_PUBLIC_STATIC=1 NEXT_PUBLIC_BASE_PATH=/blog npm run build
+        run: STATIC_EXPORT=1 NEXT_PUBLIC_STATIC=1 npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./out

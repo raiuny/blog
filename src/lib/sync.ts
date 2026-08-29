@@ -12,7 +12,7 @@ export function repoConfig(): RepoConfig {
   if (!token) throw new Error('GITHUB_TOKEN is not configured')
   return {
     owner: process.env.OWNER_GITHUB_LOGIN || 'raiuny',
-    repo: process.env.GITHUB_REPO || 'blog',
+    repo: process.env.GITHUB_REPO || 'raiuny.github.io',
     token,
     branch: 'main',
   }
