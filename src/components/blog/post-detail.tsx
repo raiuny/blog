@@ -5,11 +5,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar, Clock, ArrowLeft, Trash2, Edit3, Tag } from 'lucide-react'
 import { format } from 'date-fns'
-import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { Markdown } from '@/components/blog/markdown'
 import { useSession } from '@/hooks/use-session'
 import {
   AlertDialog,
@@ -156,33 +154,7 @@ export function PostDetail() {
 
         {/* Content */}
         <div className="prose-blog">
-          <ReactMarkdown
-            components={{
-              code({ className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '')
-                const isInline = !match && !className
-                if (isInline) {
-                  return <code className={className} {...props}>{children}</code>
-                }
-                return (
-                  <SyntaxHighlighter
-                    style={oneDark}
-                    language={match?.[1] || 'text'}
-                    PreTag="div"
-                    customStyle={{
-                      margin: 0,
-                      borderRadius: '0.75rem',
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                )
-              },
-            }}
-          >
-            {selectedPost.content}
-          </ReactMarkdown>
+          <Markdown>{selectedPost.content}</Markdown>
         </div>
 
         {/* Footer divider */}

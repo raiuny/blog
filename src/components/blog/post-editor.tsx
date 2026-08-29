@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { Loader2, Eye, ArrowLeft, Link2, ImagePlus } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
+import { Markdown, normalizeLink } from '@/components/blog/markdown'
 
 function slugify(text: string): string {
   return text
@@ -89,14 +89,14 @@ export function PostEditor() {
     const start = ta?.selectionStart ?? content.length
     const end = ta?.selectionEnd ?? content.length
     const label = content.slice(start, end) || 'link text'
-    insertMarkdown(`[${label}](${url})`)
+    insertMarkdown(`[${label}](${normalizeLink(url.trim())})`)
   }
 
   const insertImage = () => {
     const url = window.prompt('Image URL:')
     if (!url) return
     const alt = window.prompt('Image description (alt text):', '') ?? ''
-    insertMarkdown(`\n![${alt}](${url})\n`)
+    insertMarkdown(`\n![${alt}](${normalizeLink(url.trim())})\n`)
   }
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
@@ -201,7 +201,7 @@ export function PostEditor() {
           <h1 className="mb-2 text-2xl font-bold tracking-tight">{title || 'Untitled'}</h1>
           {excerpt && <p className="mb-6 text-muted-foreground">{excerpt}</p>}
           <div className="prose-blog prose-editor-preview">
-            <ReactMarkdown>{content || '*Start writing...*'}</ReactMarkdown>
+            <Markdown>{content || '*Start writing...*'}</Markdown>
           </div>
         </div>
       ) : (
