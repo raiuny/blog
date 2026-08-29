@@ -57,7 +57,6 @@ export async function listLocalPosts(options?: {
     }),
     db.post.count({ where }),
   ])
-
   return {
     posts: rows.map(toBlogPost),
     total,
@@ -82,6 +81,9 @@ export async function saveLocalPost(
     authorName?: string
   },
 ): Promise<BlogPost> {
+  const cleanSlug = slug.trim()
+  if (!cleanSlug) throw new Error('Slug must not be empty')
+
   const payload = {
     title: data.title,
     excerpt: data.excerpt || null,
@@ -92,8 +94,8 @@ export async function saveLocalPost(
   }
 
   const post = await db.post.upsert({
-    where: { slug },
-    create: { ...payload, slug },
+    where: { slug: cleanSlug },
+    create: { ...payload, slug: cleanSlug },
     update: payload,
   })
 

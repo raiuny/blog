@@ -71,7 +71,47 @@ export function PostDetail() {
         </Button>
 
         {/* Header */}
-        <header className="mb-8">
+        <header className="relative mb-8">
+          {/* Owner actions - top right, icon only */}
+          {session?.authenticated && (
+            <div className="absolute right-0 top-0 flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+                onClick={() => openEditor(selectedPost)}
+              >
+                <Edit3 className="h-4 w-4" />
+                <span className="sr-only">Edit</span>
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. The post &quot;{selectedPost.title}&quot; will be permanently deleted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
           {/* Tags */}
           {tags.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-1.5">
@@ -109,47 +149,6 @@ export function PostDetail() {
               <span>{selectedPost.readTime} min read</span>
             </div>
           </div>
-
-          {/* Actions - owner only */}
-          {session?.authenticated && (
-            <div className="mt-4 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 rounded-full text-xs"
-                onClick={() => openEditor(selectedPost)}
-              >
-                <Edit3 className="h-3 w-3" />
-                Edit
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5 rounded-full text-xs text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete this post?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. The post &quot;{selectedPost.title}&quot; will be permanently deleted.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          )}
         </header>
 
         {/* Divider */}

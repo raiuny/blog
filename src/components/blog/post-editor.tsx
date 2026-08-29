@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
-import { Loader2, Eye, ArrowLeft } from 'lucide-react'
+import { Loader2, Eye, ArrowLeft, Link2, ImagePlus } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 function slugify(text: string): string {
@@ -28,7 +28,7 @@ export function PostEditor() {
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
   const [published, setPublished] = useState(true)
-  const [authorName, setAuthorName] = useState('Anonymous')
+  const [authorName, setAuthorName] = useState('raiuny')
   const [saving, setSaving] = useState(false)
   const [preview, setPreview] = useState(false)
   const contentRef = useRef<HTMLTextAreaElement>(null)
@@ -51,13 +51,53 @@ export function PostEditor() {
         setContent('')
         setTags('')
         setPublished(true)
-        setAuthorName('Anonymous')
+        setAuthorName('raiuny')
       }
       setPreview(false)
       setTimeout(() => titleRef.current?.focus(), 100)
     }
   }, [isEditorOpen, editingPost])
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault()
+      handleSave()
+    }
+    if (e.key === 'Escape' && !e.shiftKey) {
+      closeEditor()
+    }
+  }
 
+  /** Replace the textarea selection (or insert at cursor) with snippet. */
+  const insertMarkdown = (snippet: string) => {
+    const ta = contentRef.current
+    const start = ta?.selectionStart ?? content.length
+    const end = ta?.selectionEnd ?? content.length
+    const next = content.slice(0, start) + snippet + content.slice(end)
+    setContent(next)
+    requestAnimationFrame(() => {
+      const el = contentRef.current
+      if (!el) return
+      el.focus()
+      el.selectionStart = el.selectionEnd = start + snippet.length
+    })
+  }
+
+  const insertLink = () => {
+    const url = window.prompt('Link URL:')
+    if (!url) return
+    const ta = contentRef.current
+    const start = ta?.selectionStart ?? content.length
+    const end = ta?.selectionEnd ?? content.length
+    const label = content.slice(start, end) || 'link text'
+    insertMarkdown(`[${label}](${url})`)
+  }
+
+  const insertImage = () => {
+    const url = window.prompt('Image URL:')
+    if (!url) return
+    const alt = window.prompt('Image description (alt text):', '') ?? ''
+    insertMarkdown(`\n![${alt}](${url})\n`)
+  }
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
     if (!editingPost) {
@@ -120,12 +160,6 @@ export function PostEditor() {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault()
-      handleSave()
-    }
-  }
 
   return (
     <div onKeyDown={handleKeyDown} className="flex flex-col">
@@ -220,7 +254,31 @@ export function PostEditor() {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="content" className="text-xs font-medium text-muted-foreground">Content (Markdown)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="content" className="text-xs font-medium text-muted-foreground">Content (Markdown)</Label>
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    title="Insert link"
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                    onClick={insertLink}
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    title="Insert image"
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                    onClick={insertImage}
+                  >
+                    <ImagePlus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
               <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter to save</span>
             </div>
             <Textarea

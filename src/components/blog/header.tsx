@@ -66,7 +66,7 @@ export function Header() {
               <Github className="h-4 w-4" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-foreground">
-              {selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : "raiuny's blog"}
+              {view === 'post' && selectedPost ? selectedPost.title.slice(0, 24) + (selectedPost.title.length > 24 ? '...' : '') : "raiuny's blog"}
             </span>
           </button>
         </div>

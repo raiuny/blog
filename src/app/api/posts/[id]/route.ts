@@ -33,12 +33,13 @@ export async function PUT(
     const { id } = await params
     const body = await req.json()
 
-    const existing = await getLocalPost(id)
+    // The id may come from a stale list; fall back to the slug in the body.
+    const existing = (await getLocalPost(id)) ?? (body.slug ? await getLocalPost(body.slug) : null)
     if (!existing) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    const newSlug = body.slug || existing.slug
+    const newSlug = (body.slug || existing.slug).trim()
 
     // Slug changed: remove the old row so no orphan post is left behind
     if (newSlug !== existing.slug) {
