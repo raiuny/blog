@@ -1,6 +1,6 @@
 'use client'
 
-import { Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink, LogIn, LogOut } from 'lucide-react'
+import { Cat, Github, PenSquare, Search, ArrowLeft, Menu, X, ExternalLink, LogIn, LogOut } from 'lucide-react'
 import { SignInDialog } from './sign-in-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -62,8 +62,8 @@ export function Header() {
             onClick={handleBack}
             className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Github className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-foreground">
+              <Cat className="h-5 w-5" aria-label="Black cat" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-foreground">
               raiuny&apos;s blog
