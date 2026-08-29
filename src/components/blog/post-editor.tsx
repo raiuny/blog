@@ -114,7 +114,7 @@ export function PostEditor() {
         toast.error(data.error || 'Upload failed')
         return
       }
-      insertMarkdown(`\n![${file.name}](${data.url}${askImageWidth()})\n`)
+      insertMarkdown(`\n![${file.name}](<${data.url}${askImageWidth()}>)\n`)
       toast.success('Image uploaded')
     } catch {
       toast.error('Upload failed')
@@ -133,7 +133,7 @@ export function PostEditor() {
     const url = window.prompt('Image URL:')
     if (!url) return
     const alt = window.prompt('Image description (alt text):', '') ?? ''
-    insertMarkdown(`\n![${alt}](${normalizeLink(url.trim())}${askImageWidth()})\n`)
+    insertMarkdown(`\n![${alt}](<${normalizeLink(url.trim())}${askImageWidth()}>)\n`)
   }
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
