@@ -36,7 +36,7 @@ export function Markdown({ children }: { children: string }) {
             </a>
           )
         },
-        img({ src, alt, ...props }) {
+        img({ src, alt, node: _node, ...props }) {
           // Typora-style size suffix: ![](url =400) =400px wide, =50% of the
           // column, =400x300 fixed. Requires a space before "=" so plain URLs
           // ending in "=digits" are not misparsed.
@@ -44,9 +44,11 @@ export function Markdown({ children }: { children: string }) {
           let width: string | undefined
           let height: string | undefined
           if (url) {
-            const m = url.match(/\s=\s*(\d+(?:%|px)?)(?:x(\d+(?:%|px)?))?\s*$/)
+            // react-markdown keeps pointy-bracket destinations verbatim but
+            // percent-encodes spaces: "<url =200>" arrives as "url%20=200".
+            const m = url.match(/(?:\s|%20)=\s*(\d+(?:%|px)?)(?:x(\d+(?:%|px)?))?\s*$/)
             if (m) {
-              url = url.slice(0, m.index).trimEnd()
+              url = url.slice(0, m.index)
               width = m[1]
               height = m[2]
             }
@@ -57,7 +59,7 @@ export function Markdown({ children }: { children: string }) {
                 width: /\d$/.test(width) ? `${width}px` : width,
                 maxWidth: '100%',
                 height: height ? (/\d$/.test(height) ? `${height}px` : height) : 'auto',
-            }
+              }
             : undefined
 
           return (
