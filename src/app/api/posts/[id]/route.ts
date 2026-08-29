@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const post = getLocalPost(id)
+    const post = await getLocalPost(id)
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
@@ -26,13 +26,19 @@ export async function PUT(
     const { id } = await params
     const body = await req.json()
 
-    const existing = getLocalPost(id)
+    const existing = await getLocalPost(id)
     if (!existing) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
     const newSlug = body.slug || existing.slug
-    const post = saveLocalPost(newSlug, {
+
+    // Slug changed: remove the old row so no orphan post is left behind
+    if (newSlug !== existing.slug) {
+      await deleteLocalPost(existing.slug)
+    }
+
+    const post = await saveLocalPost(newSlug, {
       title: body.title ?? existing.title,
       excerpt: body.excerpt ?? existing.excerpt,
       content: body.content ?? existing.content,
@@ -54,7 +60,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const ok = deleteLocalPost(id)
+    const ok = await deleteLocalPost(id)
     if (!ok) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }

@@ -1,4 +1,4 @@
-import { listLocalPosts, saveLocalPost } from '@/lib/posts'
+import { getLocalPost, listLocalPosts, saveLocalPost } from '@/lib/posts'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    const { posts, total, totalPages } = listLocalPosts({ published, tag, search, page, limit })
+    const { posts, total, totalPages } = await listLocalPosts({ published, tag, search, page, limit })
 
     return NextResponse.json({ posts, pagination: { page, limit, total, totalPages } })
   } catch (error) {
@@ -28,14 +28,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 })
     }
 
-    const post = listLocalPosts({ published: false, limit: 999 }).posts.find(
-      (p) => p.slug === slug,
-    )
-    if (post) {
+    const existing = await getLocalPost(slug)
+    if (existing) {
       return NextResponse.json({ error: 'A post with this slug already exists' }, { status: 409 })
     }
 
-    const newPost = saveLocalPost(slug, { title, excerpt, content, tags, published, authorName })
+    const newPost = await saveLocalPost(slug, { title, excerpt, content, tags, published, authorName })
     return NextResponse.json({ post: newPost }, { status: 201 })
   } catch (error) {
     console.error('Error creating post:', error)
