@@ -9,6 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { Loader2, Eye, ArrowLeft, Link2, ImagePlus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { BASE_PATH } from '@/lib/client-config'
 import { Markdown, normalizeLink } from '@/components/blog/markdown'
 
 function slugify(text: string): string {
@@ -26,14 +33,15 @@ export function PostEditor() {
   const [slug, setSlug] = useState('')
   const [excerpt, setExcerpt] = useState('')
   const [content, setContent] = useState('')
-  const [tags, setTags] = useState('')
-  const [published, setPublished] = useState(true)
-  const [authorName, setAuthorName] = useState('raiuny')
   const [saving, setSaving] = useState(false)
   const [preview, setPreview] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [published, setPublished] = useState(true)
+  const [authorName, setAuthorName] = useState('raiuny')
+  const [tags, setTags] = useState('')
   const contentRef = useRef<HTMLTextAreaElement>(null)
   const titleRef = useRef<HTMLInputElement>(null)
-
   useEffect(() => {
     if (isEditorOpen) {
       if (editingPost) {
@@ -90,6 +98,29 @@ export function PostEditor() {
     const end = ta?.selectionEnd ?? content.length
     const label = content.slice(start, end) || 'link text'
     insertMarkdown(`[${label}](${normalizeLink(url.trim())})`)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`${BASE_PATH}/api/upload`, { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Upload failed')
+        return
+      }
+      insertMarkdown(`\n![${file.name}](${data.url})\n`)
+      toast.success('Image uploaded')
+    } catch {
+      toast.error('Upload failed')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const insertImage = () => {
@@ -267,18 +298,37 @@ export function PostEditor() {
                   >
                     <Link2 className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    title="Insert image"
-                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
-                    onClick={insertImage}
-                  >
-                    <ImagePlus className="h-3.5 w-3.5" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        title="Insert image"
+                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                        disabled={uploading}
+                      >
+                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
+                        Upload from device…
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={insertImage}>
+                        From URL…
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/svg+xml"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
               <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter to save</span>
             </div>
             <Textarea
