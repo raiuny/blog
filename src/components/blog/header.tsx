@@ -105,6 +105,18 @@ export function Header() {
           )}
           {authed && (
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEditor()}
+              className="h-9 gap-1.5 rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              <PenSquare className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Write</span>
+            </Button>
+          )}
+          {!authed && !STATIC_MODE && signInButton}
+          {authed && (
+            <Button
               variant="ghost"
               size="icon"
               asChild
