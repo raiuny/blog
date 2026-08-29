@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Blog — Thoughts, Stories & Ideas",
-  description: "A minimalist blog about web development, design, and technology. Built with Next.js.",
+  title: "Blog — Code, Craft & Curiosity",
+  description: "Thoughts on software, design, technology, and the things I build along the way.",
   keywords: ["blog", "Next.js", "web development", "technology", "design"],
   authors: [{ name: "Blog Author" }],
   icons: {

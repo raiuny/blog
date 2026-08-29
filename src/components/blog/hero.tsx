@@ -30,15 +30,14 @@ export function Hero() {
           </motion.div>
 
           <h1 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Thoughts, Stories &{' '}
-            <span className="bg-gradient-to-r from-primary via-chart-3 to-primary bg-clip-text text-transparent">
-              Ideas
+            Code, Craft &{' '}
+            <span className="text-primary">
+              Curiosity
             </span>
           </h1>
 
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            A minimalist blog about web development, design, and technology.
-            Built with Next.js and deployable to GitHub Pages.
+          <p className="mx-auto max-w-[660px] text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Thoughts on software, design, technology, and the things I build along the way.
           </p>
         </motion.div>
       </div>
