@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- ears -->
+  <path d="M5.5 3 L12 12 L5.5 14.5 Z" fill="#111111"/>
+  <path d="M26.5 3 L20 11.5 L26.5 14.5 Z" fill="#111111"/>
+  <!-- head -->
+  <circle cx="16" cy="19" r="11" fill="#111111"/>
+  <!-- eyes -->
+  <circle cx="11.5" cy="18" r="2.2" fill="#ffffff"/>
+  <circle cx="20.5" cy="18" r="2.2" fill="#ffffff"/>
+  <!-- nose -->
+  <path d="M14.6 22.5 L17.4 22.5 L16 24.3 Z" fill="#ffffff"/>
+</svg>

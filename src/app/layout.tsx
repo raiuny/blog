@@ -18,9 +18,6 @@ export const metadata: Metadata = {
   description: "Thoughts on software, design, technology, and the things I build along the way.",
   keywords: ["blog", "Next.js", "web development", "technology", "design"],
   authors: [{ name: "Blog Author" }],
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>",
-  },
 };
 
 export default function RootLayout({
