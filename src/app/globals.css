@@ -293,3 +293,14 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: oklch(0.45 0.03 70);
 }
+/* Golden-ratio content column: 61.8% of full width on large screens */
+.golden-column {
+  width: 100%;
+  margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .golden-column {
+    width: 61.8vw;
+  }
+}
