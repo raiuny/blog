@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 
 const IMAGE_RE = /\.(png|jpe?g|gif|webp|avif|svg)$/i
+export const dynamic = 'force-dynamic'
 
 function pickMessage(value: unknown): string | undefined {
   if (value && typeof value === 'object' && 'message' in value && typeof value.message === 'string') {
@@ -38,6 +39,7 @@ export async function GET() {
   const repo = process.env.GITHUB_REPO || 'raiuny.github.io'
 
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/images`, {
+    cache: 'no-store',
     headers: githubHeaders(token),
   })
   if (res.status === 404) {

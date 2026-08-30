@@ -22,7 +22,7 @@ export function ImagePanel() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${BASE_PATH}/api/images`)
+      const res = await fetch(`${BASE_PATH}/api/images`, { cache: 'no-store' })
       const data = await res.json()
       if (res.ok) setImages(data.images ?? [])
     } catch {
@@ -39,10 +39,11 @@ export function ImagePanel() {
     return () => window.removeEventListener('blog:images-updated', onUpdated)
   }, [load])
 
-  const handleDelete = async (path: string, name: string) => {
+  const handleDelete = async (path: string, name: string, url: string) => {
     setDeleting(path)
     try {
       const res = await fetch(`${BASE_PATH}/api/images`, {
+        cache: 'no-store',
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path }),
@@ -53,6 +54,7 @@ export function ImagePanel() {
         return
       }
       setImages((prev) => prev.filter((img) => img.path !== path))
+      window.dispatchEvent(new CustomEvent('blog:image-deleted', { detail: { path, url } }))
       toast.success(`Deleted ${name}`)
     } catch {
       toast.error('Failed to delete image')
@@ -101,7 +103,7 @@ export function ImagePanel() {
                 type="button"
                 aria-label={`Delete ${img.name}`}
                 disabled={deleting === img.path}
-                onClick={() => handleDelete(img.path, img.name)}
+                onClick={() => handleDelete(img.path, img.name, img.url)}
                 className="absolute right-1 top-1 rounded-md bg-background/85 p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
               >
                 <Trash2 className="h-3.5 w-3.5" />

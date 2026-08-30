@@ -27,6 +27,12 @@ function slugify(text: string): string {
     .replace(/-+/g, '-')
     .trim()
 }
+function removeImageReference(markdown: string, url: string): string {
+  const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return markdown
+    .replace(new RegExp(`<img\\b[^>]*\\bsrc=(["'])${escaped}\\1[^>]*>`, 'gi'), '')
+    .replace(new RegExp(`!\\[[^\\]]*\\]\\(<?${escaped}(?:\\s+=[^)]*)?>?\\)`, 'g'), '')
+}
 
 export function PostEditor() {
   const { isEditorOpen, closeEditor, editingPost, addPostToList, updatePostInList } = useBlogStore()
@@ -68,6 +74,15 @@ export function PostEditor() {
       setTimeout(() => titleRef.current?.focus(), 100)
     }
   }, [isEditorOpen, editingPost])
+  useEffect(() => {
+    const onImageDeleted = (event: Event) => {
+      const url = (event as CustomEvent<{ url?: unknown }>).detail?.url
+      if (typeof url !== 'string' || !url) return
+      setContent((current) => removeImageReference(current, url))
+    }
+    window.addEventListener('blog:image-deleted', onImageDeleted)
+    return () => window.removeEventListener('blog:image-deleted', onImageDeleted)
+  }, [])
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault()
