@@ -9,12 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { Loader2, Eye, ArrowLeft, Link2, ImagePlus } from 'lucide-react'
+import { Slider } from '@/components/ui/slider'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { BASE_PATH } from '@/lib/client-config'
 import { Markdown, normalizeLink } from '@/components/blog/markdown'
 
@@ -36,12 +37,14 @@ export function PostEditor() {
   const [saving, setSaving] = useState(false)
   const [preview, setPreview] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pendingImage, setPendingImage] = useState<{ url: string; name: string } | null>(null)
+  const [imageWidth, setImageWidth] = useState(60)
   const [published, setPublished] = useState(true)
   const [authorName, setAuthorName] = useState('raiuny')
   const [tags, setTags] = useState('')
   const contentRef = useRef<HTMLTextAreaElement>(null)
   const titleRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (isEditorOpen) {
       if (editingPost) {
@@ -114,8 +117,9 @@ export function PostEditor() {
         toast.error(data.error || 'Upload failed')
         return
       }
-      insertMarkdown(`\n![${file.name}](<${data.url}${askImageWidth()}>)\n`)
-      toast.success('Image uploaded')
+      // Open the size-preview dialog for the freshly uploaded image
+      setPendingImage({ url: data.url, name: file.name })
+      setImageWidth(60)
     } catch {
       toast.error('Upload failed')
     } finally {
@@ -123,17 +127,10 @@ export function PostEditor() {
     }
   }
 
-  const askImageWidth = () => {
-    const raw = window.prompt('Image width — px like 400, or % like 50 (leave empty = original):', '')
-    if (!raw) return ''
-    return /^\d+(%|px)?$/.test(raw.trim()) ? ` =${raw.trim()}` : ''
-  }
-
-  const insertImage = () => {
-    const url = window.prompt('Image URL:')
-    if (!url) return
-    const alt = window.prompt('Image description (alt text):', '') ?? ''
-    insertMarkdown(`\n![${alt}](<${normalizeLink(url.trim())}${askImageWidth()}>)\n`)
+  const confirmInsertImage = () => {
+    if (!pendingImage) return
+    insertMarkdown(`\n<img src="${pendingImage.url}" width="${imageWidth}%" alt="${pendingImage.name.replace(/"/g, '')}">\n`)
+    setPendingImage(null)
   }
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value)
@@ -304,28 +301,17 @@ export function PostEditor() {
                   >
                     <Link2 className="h-3.5 w-3.5" />
                   </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        title="Insert image"
-                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
-                        disabled={uploading}
-                      >
-                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
-                        Upload from device…
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={insertImage}>
-                        From URL…
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    title="Insert image"
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                  </Button>
                 </div>
               </div>
           <input
@@ -375,6 +361,48 @@ console.log('Hello')
           </div>
         </div>
       )}
+      {/* Image size preview dialog */}
+      <Dialog open={isEditorOpen && pendingImage !== null} onOpenChange={(open) => { if (!open) setPendingImage(null) }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Adjust image size</DialogTitle>
+          </DialogHeader>
+          <div className="rounded-xl border border-border/50 bg-secondary/30 p-4">
+            {pendingImage && (
+              <img
+                src={pendingImage.url}
+                alt={pendingImage.name}
+                style={{ width: `${imageWidth}%` }}
+                className="mx-auto rounded-lg"
+              />
+            )}
+          </div>
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Width (relative to post column)</span>
+              <span className="font-medium">{imageWidth}%</span>
+            </div>
+            <Slider
+              value={[imageWidth]}
+              min={10}
+              max={100}
+              step={5}
+              onValueChange={(v) => setImageWidth(v[0] as number)}
+            />
+            <p className="text-xs text-muted-foreground/70">
+              The preview matches the final size inside the post column.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={() => setPendingImage(null)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={confirmInsertImage}>
+              Insert
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
