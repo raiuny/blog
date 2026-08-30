@@ -18,6 +18,12 @@ export function normalizeLink(href: string | undefined): string | undefined {
   }
   return `https://${href}`
 }
+const RAW_IMAGE_CACHE_VERSION = '2'
+
+function bustRawImageCache(url: string): string {
+  if (!url.startsWith('https://raw.githubusercontent.com/')) return url
+  return `${url}${url.includes('?') ? '&' : '?'}v=${RAW_IMAGE_CACHE_VERSION}`
+}
 
 export function Markdown({ children }: { children: string }) {
   return (
@@ -54,7 +60,7 @@ export function Markdown({ children }: { children: string }) {
               suffixWidth = m[1]
               suffixHeight = m[2]
             }
-            url = normalizeLink(url)
+            url = bustRawImageCache(normalizeLink(url) ?? url)
           }
 
           // Raw HTML <img width="60%"> support (rehype-raw). Explicit width
