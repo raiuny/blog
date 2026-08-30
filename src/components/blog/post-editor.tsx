@@ -363,18 +363,17 @@ console.log('Hello')
         </div>
       )}
       <Dialog open={isEditorOpen && pendingImage !== null} onOpenChange={(open) => { if (!open) setPendingImage(null) }}>
-        {/* Width matches the post content column so the preview is WYSIWYG */}
-        <DialogContent className="max-w-none p-4 sm:w-[61.8vw] sm:max-w-none sm:p-6">
+        <DialogContent className="max-w-lg p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>调整图片大小</DialogTitle>
           </DialogHeader>
-          <div className="rounded-xl border border-border/50 bg-secondary/30">
+          <div className="flex h-72 items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-secondary/30">
             {pendingImage && (
               <img
                 src={pendingImage.url}
                 alt={pendingImage.name}
                 style={{ width: `${imageWidth}%` }}
-                className="mx-auto rounded-lg"
+                className="mx-auto max-h-full rounded-lg object-contain"
               />
             )}
           </div>
@@ -391,7 +390,7 @@ console.log('Hello')
               onValueChange={(v) => setImageWidth(v[0] as number)}
             />
             <p className="text-xs text-muted-foreground/70">
-              预览尺寸与发布后在文章列中的实际尺寸一致。
+              预览按比例缩放显示，插入后图片占文章内容列宽的 {imageWidth}%。
             </p>
           </div>
           <div className="flex justify-end gap-2 pt-1">
