@@ -34,6 +34,9 @@ export function ImagePanel() {
 
   useEffect(() => {
     load()
+    const onUpdated = () => load()
+    window.addEventListener('blog:images-updated', onUpdated)
+    return () => window.removeEventListener('blog:images-updated', onUpdated)
   }, [load])
 
   const handleDelete = async (path: string, name: string) => {

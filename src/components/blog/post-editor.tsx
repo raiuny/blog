@@ -120,6 +120,7 @@ export function PostEditor() {
       // Open the size-preview dialog for the freshly uploaded image
       setPendingImage({ url: data.url, name: file.name })
       setImageWidth(60)
+      window.dispatchEvent(new CustomEvent('blog:images-updated'))
     } catch {
       toast.error('Upload failed')
     } finally {
