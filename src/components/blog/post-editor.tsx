@@ -361,13 +361,13 @@ console.log('Hello')
           </div>
         </div>
       )}
-      {/* Image size preview dialog */}
       <Dialog open={isEditorOpen && pendingImage !== null} onOpenChange={(open) => { if (!open) setPendingImage(null) }}>
-        <DialogContent className="max-w-lg">
+        {/* Width matches the post content column so the preview is WYSIWYG */}
+        <DialogContent className="max-w-none p-4 sm:w-[61.8vw] sm:max-w-none sm:p-6">
           <DialogHeader>
-            <DialogTitle>Adjust image size</DialogTitle>
+            <DialogTitle>调整图片大小</DialogTitle>
           </DialogHeader>
-          <div className="rounded-xl border border-border/50 bg-secondary/30 p-4">
+          <div className="rounded-xl border border-border/50 bg-secondary/30">
             {pendingImage && (
               <img
                 src={pendingImage.url}
@@ -379,26 +379,26 @@ console.log('Hello')
           </div>
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Width (relative to post column)</span>
+              <span className="text-muted-foreground">宽度（相对文章内容列）</span>
               <span className="font-medium">{imageWidth}%</span>
             </div>
             <Slider
               value={[imageWidth]}
-              min={10}
+              min={5}
               max={100}
-              step={5}
+              step={1}
               onValueChange={(v) => setImageWidth(v[0] as number)}
             />
             <p className="text-xs text-muted-foreground/70">
-              The preview matches the final size inside the post column.
+              预览尺寸与发布后在文章列中的实际尺寸一致。
             </p>
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={() => setPendingImage(null)}>
-              Cancel
+              取消
             </Button>
             <Button size="sm" onClick={confirmInsertImage}>
-              Insert
+              插入
             </Button>
           </div>
         </DialogContent>
